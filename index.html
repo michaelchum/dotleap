@@ -1,0 +1,403 @@
+<!DOCTYPE HTML>
+<html>
+  <head>
+    <style>
+      body {
+        margin: 0px;
+        padding: 0px;
+        text-align:center;
+        width:100%;
+        height:100%;
+      }
+
+      #grid, #grid2 {
+        position:absolute;
+        top:0;
+        left:0;
+        height:100%;
+        width:100%;
+        text-align:center;
+      }
+      #grid2 {
+        padding-top:90px;
+        padding-left:120px;
+      }
+      .col {
+        display:inline-block;
+      }
+      #grid2 {
+        padding-left:30px;
+        padding-top:100px;
+      }
+      .spacer {
+        width:35px;
+        height:120px;
+        border:3px solid white;
+        display:inline-block;
+
+      }
+      .sq {
+        width:130px;
+        height:130px;
+        border:5px solid white;
+        display:inline-block;
+        margin-left:-5px;
+        margin-top:-10px;
+      }
+      a.circle {
+        display:block;
+        margin:65px 30px;
+        width: 60px;
+        height: 60px;
+        background: red;
+        -moz-border-radius: 30px;
+        -webkit-border-radius: 30px;
+        border-radius: 30px;
+        transition: all 0.5s ease-in-out;
+
+      }
+
+      a.circle.active {
+        width:60px;
+        height:60px;
+        background-color:white;
+      }
+      a.circle.matched {
+        margin-top:30px;
+        opacity:0;
+        transition: all 1.5s ease-in-out;
+      }
+      a.circle.hidden {
+        margin-top:30px;
+        opacity:0;
+        transition: all 1.5s ease-in-out;
+      }
+
+      .points {
+        position:absolute;
+        top:0;
+        right:0;
+        height:20px;
+        width:20px;
+        font-size:50px;
+        font-family:Verdana;
+        padding-top:310px;
+        padding-right:145px;
+        text-align:center;
+      }
+      .pointslabel {
+        position:absolute;
+        top:0;
+        right:0;
+        height:20px;
+        width:20px;
+        font-size:35px;
+        font-family:Verdana;
+        padding-top:270px;
+        padding-right:135px;
+        text-align:center;
+      }
+
+      .rounds {
+        position:absolute;
+        top:0;
+        left:0;
+        height:20px;
+        width:20px;
+        font-size:50px;
+        font-family:Verdana;
+        padding-top:310px;
+        padding-left:45px;
+        text-align:center;
+      }
+      .roundslabel {
+        position:absolute;
+        top:0;
+        left:0;
+        height:20px;
+        width:20px;
+        font-size:35px;
+        font-family:Verdana;
+        padding-top:270px;
+        padding-left:20px;
+        text-align:center;
+      }
+
+      .modaloverlay {
+        position:absolute;
+        height:100%;
+        width:100%;
+        top:0;
+        bottom:0;
+        left:0;
+        right:0;
+        background-color:rgba(0,0,0,0.5);
+
+      }
+      .modaltext {
+        height:200px;
+        width:500px;
+        background-color:rgba(255, 255, 255, 0.7);
+        margin:0 auto;
+        margin-top:200px;
+        padding-top:50px;
+        border-radius:25px;
+      }
+    </style>
+
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <!-- Leapstrap -->
+    <link href="css/leapstrap.css" rel="stylesheet" media="screen">
+    <!-- jQuery (necessary for Leapstrap's JavaScript plugins) -->
+    <script src="https://code.jquery.com/jquery.js"></script>
+    <!-- Leap (http://js.leapmotion.com/) -->
+    <script src="http://js.leapmotion.com/0.3.0-beta3/leap.js"></script>
+    <!-- Leapstrap -->
+    <script src="js/leapstrap.js"></script>
+
+  </head>
+
+  <body>
+    <div class='roundslabel'>Rounds</div>
+    <div class='rounds'>30</div>
+    <div class='pointslabel'>Points</div>
+    <div class='points'>0</div>
+
+    <div id="grid2"></div>
+
+    <div id="grid" >
+      <div class="col" id="c0"></div>
+      <div class="col" id="c1"></div>
+      <div class="col" id="c2"></div>
+      <div class="col" id= "c3"></div>
+      <div class="col" id= "c4"></div>
+      <div class="col" id= "c5"></div>
+      <div class="col" id= "c6"></div>
+      <div class="col" id= "c7"></div>
+    </div>
+
+    <div class="modaloverlay" style="display:none">
+      <div class="modaltext">
+        Game Over
+        <br><br>
+        <a href='javascript:restart();'>Restart</a>
+      </div>
+    </div>
+
+    <script>
+      var last = null;
+      var active = new Array();
+      var points = 0;
+      var colors = new Array();
+      var current_color;
+      var rounds = 30;
+      waiting = false;
+      colors[0] = '#31E05D'; //green
+      colors[1] = '#F55D83'; //red
+      colors[2] = '#58EAF5'; //blue
+      colors[3] = '#F5F058'; //yellow
+
+      // Sounds
+      var click = new Audio('sounds/gemongem2.ogg');
+      var combo = new Audio('sounds/electro_explode.ogg');
+
+      $(document).ready(function() {
+        // Build #grid2 for lines
+      for (var l = 0; l < 4; l++) {
+        for (var m = 0; m < 7; m++) {
+            $('#grid2').append("<div class='sq' id='s"+m+l+"'></div>");
+        }
+        $('#grid2').append("<div class='spacer'></div><br>");
+      }
+
+      // Build #grid for lines
+      for (var i = 0; i < 8 ; i++) {
+          cl = "#c"+i;
+          for (var j = 0; j < 5; j++) {
+            rand = Math.floor((Math.random()*4));
+            $(cl).append("<a class='circle leap-interactive' leap-click-delay='1500' id='"+ i + ""+j +"' style='background-color:"+colors[rand]+"'></a>");
+          }
+      }
+      resetIDs();
+
+        $( ".col" ).on( "click", ".leap-interactive", function() {
+          id = this.id;
+          var color = $('#'+id).css('background-color');
+          console.log(id+" clicked");
+          var x = id[0];
+          var y = id[1];
+
+          if (last == null) { // IF THIS IS THE FIRST CLICK
+            click.play();
+            current_color = $('#'+id).css('background-color'); // Update current_color
+            $('#'+id).addClass('active');
+            $('#'+id).css('background-color','white');
+            $('#'+id).css('border','10px solid '+color);
+            last = id;
+            active.push(id);
+          } 
+          else { // IF IT'S NOT THE FIRST CLICK
+            x1 = last[0];
+            y1 = last[1];
+
+            if (x == x1) { // Same ROW
+              if (Math.abs(y-y1) == 1) { // NEXT to eachother
+                if (current_color == color && !$('#'+id).hasClass('active')) { // Same COLOUR, NOT ACTIVE
+                  n = Math.min(y, y1);
+                  console.log('#s' + x + '' + n);
+
+                  // Handle last column
+                  if (x<8) {
+                    $('#s'+(x) + '' + n).css('border-left','5px solid '+color);    
+                  } else {
+                    $('#s'+(x-1) + '' + n).css('border-right','5px solid '+color);  
+                  }
+
+                  $('#'+id).addClass('active');
+                  $('#'+id).css('background-color','white');
+                  $('#'+id).css('border','10px solid '+color);
+                  last = id;
+                  active.push(id);
+                }
+              }
+            } 
+            else if (y == y1) { // Same COLUMN
+              if (Math.abs(x-x1) == 1) { // NEXT to eachother
+                if (current_color == color && !$('#'+id).hasClass('active')) { // Same COLOUR, NOT ACTIVE
+                  n = Math.min(x, x1);
+                  console.log('#s' + n + '' + y);
+
+                  // Handle last row
+                  if (y<4){
+                    $('#s'+(n) + '' + y).css('border-top','5px solid '+color);
+                  } else {
+                    $('#s'+(n) + '' + (y-1)).css('border-bottom','5px solid '+color);
+                  }
+
+                  $('#'+id).addClass('active');
+                  $('#'+id).css('background-color','white');
+                  $('#'+id).css('border','10px solid '+color);
+                  last = id;
+                  active.push(id);
+                }
+              }
+            }
+
+            if (color==current_color) {
+              click.play();
+              var neighbours = Neighbours(id);
+
+              // NO MORE MOVES, COMPLETE
+              if (!neighbours) {
+                console.log("NO NEIGHBOURS");
+                combo.play();
+                if (active.length>3) points+=active.length*100; // Bonus points
+                for (var t in active) points += 50;
+                rounds -= 1;
+                $('.rounds').html(rounds);
+                $('.points').html(points);
+                removeh();
+              }
+
+              if (rounds==0) {
+                $('.modaloverlay').fadeIn();
+              }
+            }
+          }
+
+        })
+
+        $('.modaloverlay').click(function() {
+          restart();
+        })
+      })
+      
+      function refresh() {
+        console.log("refreshing");
+        for (var t=0; t < active.length; t++ ) {
+          rand = Math.floor((Math.random()*4));
+          $('#'+active[t]).remove();
+          $('#c'+active[t][0]).append("<a class='circle leap-interactive' leap-click-delay='1500' id='' style='background-color:"+colors[rand]+"'></a>");
+        }
+        resetIDs();
+        
+        active = [];
+        last = null;
+        id = null;
+        $('.sq').css('border','5px solid white');
+      }
+
+      function restart() {
+        last = null;
+        active = [];
+        points = 0;
+        current_color = null;
+        rounds = 30;
+        $('.rounds').html(rounds);
+        $('.points').html(points);
+        for (var i = 0; i < 8 ; i++) {
+          cl = "#c"+i;
+          for (var j = 0; j < 5; j++) {
+            rand = Math.floor((Math.random()*4));
+            $('#'+i+''+j).remove();
+            $(cl).append("<a class='circle leap-interactive' leap-click-delay='1500' id='"+ i + ""+j +"' style='background-color:"+colors[rand]+"'></a>");
+          }
+        }
+        resetIDs();
+        $('.modaloverlay').fadeOut();
+      }
+
+      function removeh() {
+        var active1 = active;
+        var colors1 = colors;
+        for (var t=0; t < active.length; t++ ) {
+          $('#'+active[t]).addClass('matched');
+        }
+        setTimeout(function () {
+          console.log("There you go");
+          refresh();
+        }, 750);
+      }
+
+      function Neighbours(id) {
+        x = parseInt(id[0]);
+        y = parseInt(id[1]);
+        console.log(x+' '+y);
+
+        c = current_color;
+
+        neighbours = false;
+
+        if ((x+1) < 8 && c == $('#'+(x+1)+''+y).css('background-color') && !$('#'+(x+1)+''+y).hasClass('active')) {
+            neighbours =true;
+        } else if ((y+1) < 5 && c == $('#'+(x)+''+(y+1)).css('background-color') && !$('#'+(x)+''+(y+1)).hasClass('active')) {
+            neighbours = true;
+        } else if ((y-1) > -1 && c == $('#'+(x)+''+(y-1)).css('background-color') && !$('#'+(x)+''+(y-1)).hasClass('active')) {
+            neighbours = true;
+        } else if ((x-1) > -1 && c == $('#'+(x-1)+''+y).css('background-color') && !$('#'+(x-1)+''+y).hasClass('active')) {
+            neighbours = true;
+        }
+
+        return neighbours;
+      }
+
+      function resetIDs() {
+        console.log("Resetting IDs");
+        $(".col").each(function() {
+          id = this.id;
+          j = 0;
+          $(this).children(".circle").each(function() {
+            this.id = id[1]+""+j;
+            j++;
+          });
+        });
+      }
+
+    </script>
+
+    <script>LeapManager.init({interactiveSelector:"a",maxCursors:1});</script>
+
+  </body>
+
+
+</html>

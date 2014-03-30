@@ -1,0 +1,274 @@
+<!DOCTYPE HTML>
+<html>
+  <head>
+    <style>
+      body {
+        margin: 0px;
+        padding: 0px;
+        text-align:center;
+        width:100%;
+        height:100%;
+      }
+
+      #grid, #grid2 {
+        position:absolute;
+        top:0;
+        left:0;
+        height:100%;
+        width:100%;
+        text-align:center;
+      }
+      #grid2 {
+        padding-top:90px;
+        padding-left:120px;
+      }
+      .col {
+        display:inline-block;
+      }
+      #grid2 {
+        padding-left:30px;
+        padding-top:100px;
+      }
+      .spacer {
+        width:35px;
+        height:120px;
+        border:3px solid white;
+        display:inline-block;
+
+      }
+      .sq {
+        width:130px;
+        height:130px;
+        border:5px solid white;
+        display:inline-block;
+        margin-left:-5px;
+        margin-top:-10px;
+      }
+      a.circle {
+        opacity:0.7;
+        display:block;
+        margin:65px 30px;
+        width: 60px;
+        height: 60px;
+        background: red;
+        -moz-border-radius: 30px;
+        -webkit-border-radius: 30px;
+        border-radius: 30px;
+      }
+      a.circle:hover, a.circle.active {
+        opacity:1;
+        transition: all 0.2s ease-out;
+      }
+      .points {
+        position:absolute;
+        top:0;
+        right:0;
+        height:20px;
+        width:20px;
+        font-size:12px;
+      }
+    </style>
+
+
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <!-- Leapstrap -->
+    <link href="css/leapstrap.css" rel="stylesheet" media="screen">
+    <!-- jQuery (necessary for Leapstrap's JavaScript plugins) -->
+    <script src="https://code.jquery.com/jquery.js"></script>
+    <!-- Leap (http://js.leapmotion.com/) -->
+    <script src="http://js.leapmotion.com/0.3.0-beta3/leap.js"></script>
+    <!-- Leapstrap -->
+    <script src="js/leapstrap.js"></script>
+
+  </head>
+
+  <body>
+    <div class='points'></div>
+
+    <div id="grid2">
+      
+    </div>
+
+    <div id="grid" >
+      <div class="col" id="c1"></div>
+      <div class="col" id="c2"></div>
+      <div class="col" id= "c3"></div>
+      <div class="col" id= "c4"></div>
+      <div class="col" id= "c5"></div>
+      <div class="col" id= "c6"></div>
+      <div class="col" id= "c7"></div>
+      <div class="col" id="c8"></div>
+
+     
+    </div>
+
+    <script>
+      var colors = new Array();
+      colors[0] = '#31E05D'; //green
+      colors[1] = '#F55D83'; //red
+      colors[2] = '#58EAF5'; //blue
+      colors[3] = '#F5F058'; //yellow
+
+      for (var l = 0; l < 4; l++) {
+        for (var m = 0; m < 6; m++) {
+            $('#grid2').append("<div class='sq' id='s"+m+""+l+"'></div>");
+        }
+        $('#grid2').append("<div class='spacer'></div><br>");
+      }
+
+      for (var i = 0; i < 8 ; i++) {
+          cl = "#c"+i;
+          for (var j = 0; j < 5; j++) {
+              rand = Math.floor((Math.random()*4));
+              $(cl).append("<a class='circle leap-interactive' leap-click-delay='200' id='"+ i + ""+j +"' style='background-color:"+colors[rand]+"'></a>");
+          }
+      }
+
+      var last = null;
+      var active = new Array();
+
+      $(document).ready(function() {
+        resetIDs();
+
+        $('.circle').click(function() {
+          var id = this.id;
+          console.log(id);
+          color = $('#'+id).css("background-color");
+          var x = id[0];
+          var y = id[1];
+
+          if (last == null) { //if this is the first button 
+            $('#'+id).addClass('active'); // ON CLICK
+            last = id;
+            active.push(id);
+          } 
+
+          else {
+            color1 = $('#'+last).css('background-color');
+            x1 = last[0];
+            y1 = last[1];
+
+            if (x == x1) { //if they are in the same column
+              if (Math.abs(y-y1) == 1) { //if they are next to each other
+                if (color == color1) {
+                  n = Math.min(y, y1);
+                  console.log('#s' + x + '' + n);
+
+                  // Handle last column
+                  if (x<8) {
+                    $('#s'+(x-1) + '' + n).css('border-left','5px solid '+color);    
+                  } else {
+                    $('#s'+(x-2) + '' + n).css('border-right','5px solid '+color);  
+                  }
+
+                  $('#'+id).addClass('active');
+                 
+                  active.push(id);
+                   last = id;
+                }
+              }
+            }
+            else if (y == y1) {
+              if (Math.abs(x-x1) == 1) { //if they are next to each other
+                if (color == color1) {
+                  n = Math.min(x, x1);
+                  console.log('#s' + n + '' + y);
+
+                  // Handle last row
+                  if (y<4){
+                    $('#s'+(n-1) + '' + y).css('border-top','5px solid '+color);
+                  } else {
+                    $('#s'+(n-1) + '' + (y-1)).css('border-bottom','5px solid '+color);
+                  }
+
+                  $('#'+id).addClass('active');
+                  last = id;
+                  active.push(id);
+                }
+              }
+            }
+
+            if (!Neighbours(id)) { //if no neighbours have matching colours, count the points
+              console.log("no neighbours");
+                points = 0;
+                for (var t=0; t < active.length; t++ ) {
+                  points += 5;
+                }
+                $('.points').html(points);
+               remove(active);
+                active = [];
+                last = null;
+                $('.circle').removeClass('active');
+                $('.sq').css('border','5px solid white');
+
+               
+
+                
+            }
+
+          }
+
+        })
+      })
+
+      function remove(array) {
+        
+          for (var t=0; t < active.length; t++ ) {
+              rand = Math.floor((Math.random()*4));
+              $('#'+active[t]).remove();
+              $('#c'+active[t][0]).append("<a class='circle leap-interactive' leap-click-delay='200' id='' style='background-color:"+colors[rand]+"'></a>");
+          }
+
+          resetIDs();
+      }
+
+      function Neighbours(id) {
+        x = parseInt(id[0]);
+        y = parseInt(id[1]);
+        console.log(x+' '+y);
+
+        c = $('#'+id).css('background-color');
+        console.log(c);
+
+        neighbours = false;
+
+        if ((x+1) < 8 && c == $('#'+(x+1) + ""+y).css('background-color') && !$('#'+(x+1) + ''+y).hasClass('active')) {
+            neighbours =true;
+        }
+        if ((y+1) < 5 && c == $('#'+(x) + ""+(y+1)).css('background-color') && !$('#'+(x) + ''+(y+1)).hasClass('active')) {
+            neighbours = true;
+        }
+        if ((y-1) >= 0 && c == $('#'+(x) + ""+(y-1)).css('background-color') && !$('#'+(x) + ''+(y-1)).hasClass('active')) {
+            neighbours = true;
+        }
+        if ((x-1) >= 0 && c == $('#'+(x-1) +""+y).css('background-color') && !$('#'+(x-1) + ''+y).hasClass('active')) {
+            neighbours = true;
+        }
+
+        return neighbours;
+      }
+
+      function resetIDs() {
+          $(".col").each(function() {
+            id = this.id;
+            console.log(id);
+            i = 0;
+            $(this).children(".circle").each(function() {
+                this.id = id[1]+""+i;
+                i++;
+            });
+          });
+      }
+
+
+
+    </script>
+
+
+
+<script>LeapManager.init({interactiveSelector:"a",maxCursors:1});</script>
+
+  </body>
+
+
+</html>

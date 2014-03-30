@@ -1,0 +1,115 @@
+<!DOCTYPE HTML>
+<html>
+  <head>
+    <style>
+      body {
+        margin: 0px;
+        padding: 0px;
+        text-align:center;
+        width:100%;
+        height:100%;
+      }
+
+      #leap-overlay {
+        margin-top:20px;
+        border:1px solid gray;
+      }
+    </style>
+  <script src="leap-0.4.3.min.js"></script>
+  <script src="http://ajax.googleapis.com/ajax/libs/jquery/1.11.0/jquery.min.js" ></script>
+
+  </head>
+
+  <body>
+    <canvas id="leap-overlay" width="1120" height="700"></canvas>
+    <script>
+    
+      var canvas = document.getElementById("leap-overlay");
+
+      // create a rendering context
+      var ctx = canvas.getContext("2d");
+
+      var radius = 30;
+      var space = 120;
+
+      var colors = new Array();
+      colors[0] = '#31E05D'; //green
+      colors[1] = '#F55D83'; //red
+      colors[2] = '#58EAF5'; //blue
+      colors[3] = '#F5F058'; //yellow
+
+      var i = 0;
+      var j = 0;
+
+      var c = new Array(5);
+      for (var k = 0; k < 5; k++) {
+        c[k] = new Array(8);
+      }
+
+      while (i < 8 && j < 5) {
+        rand = Math.floor((Math.random()*4));
+
+        ctx.beginPath();
+        ctx.arc(space*(i+1), space*(j+1), radius, 0, 2 * Math.PI, false);
+        ctx.fillStyle = colors[rand];
+        c[j][i] = colors[rand];
+
+        ctx.fill();
+
+        i++;
+        if (i == 8) {
+          j++;
+          i = 0;
+        }
+      }
+
+
+
+      ctx.translate(canvas.width/2,canvas.height);
+      ctx.fillStyle = "rgba(0,0,0,0.1)";
+
+
+
+
+      // render each frame
+      function draw(obj) {
+        // clear last frame
+        //ctx.clearRect(-canvas.width/2,-canvas.height,canvas.width,canvas.height);
+
+        // render circles based on pointable positions
+        var pointablesMap = obj.pointablesMap;
+        for (var i in pointablesMap) {
+          // get the pointable's position
+          var pointable = pointablesMap[i];
+          var pos = pointable.tipPosition;
+
+          // create a circle for each pointable
+          var x = parseInt(pos[0]);
+          var y = -parseInt(pos[1]);
+
+          x += 350;
+          y += 600;
+          x %= 120;
+          y %=120;
+
+
+          console.log(x + " " + y);
+
+          ctx.beginPath();
+          ctx.arc(space*(x+1),space*(y+1),20,0,2*Math.PI, false);
+          ctx.fill();
+      
+        
+          break;
+        }
+      };
+
+      // listen to Leap Motion
+      Leap.loop(draw);
+
+    </script>
+
+  </body>
+
+
+</html>
